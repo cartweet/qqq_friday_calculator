@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QQQ Friday Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c232c; --line:#2b333d;
+    --ink:#e6edf3; --dim:#8b98a5; --faint:#5d6873;
+    --green:#3fb950; --red:#f85149; --amber:#d29922; --blue:#58a6ff;
+    --accent:#3fb950;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Archivo',sans-serif; line-height:1.45; padding:26px 16px 60px;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(63,185,80,.05), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(88,166,255,.04), transparent 42%);
+  }
+  .sheet{max-width:860px; margin:0 auto;}
+  a{color:inherit; text-decoration:none;}
+
+  header{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;
+    border-bottom:2px solid var(--accent); padding-bottom:14px; margin-bottom:8px;}
+  .kicker{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px;
+    color:var(--accent); text-transform:uppercase; font-weight:500;}
+  h1{font-size:32px; font-weight:900; letter-spacing:-1px; line-height:1; margin-top:3px;}
+  h1 span{color:var(--accent);}
+  .meta{text-align:right; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--dim);}
+  .meta b{color:var(--ink); display:block; font-size:13px;}
+  .strapline{font-size:12.5px; color:var(--dim); margin:10px 0 22px; font-family:'JetBrains Mono',monospace;}
+  .strapline b{color:var(--ink);}
+
+  .sec-label{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:2.5px;
+    text-transform:uppercase; color:var(--accent); margin:24px 0 12px; display:flex; align-items:center; gap:10px;}
+  .sec-label::after{content:''; flex:1; height:1px; background:var(--line);}
+
+  /* Input grid */
+  .inputs{display:grid; grid-template-columns:repeat(2,1fr); gap:13px;}
+  .field{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:13px 15px; position:relative; overflow:hidden;}
+  .field::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--blue);}
+  .field label{display:block; font-size:13.5px; font-weight:700; margin-bottom:2px;}
+  .field .hint{font-size:11px; color:var(--dim); margin-bottom:9px; line-height:1.4;}
+  .field .hint a{color:var(--blue); border-bottom:1px dotted var(--blue);}
+  .inwrap{display:flex; align-items:center; gap:8px;}
+  .inwrap input{
+    width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:7px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700;
+    padding:9px 11px; outline:none; transition:border .15s;
+  }
+  .inwrap input:focus{border-color:var(--accent);}
+  .inwrap .unit{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--faint); flex:0 0 auto;}
+  .field select{
+    width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:7px;
+    color:var(--ink); font-family:'Archivo',sans-serif; font-size:14px; font-weight:600;
+    padding:9px 11px; outline:none; cursor:pointer;
+  }
+  .field select:focus{border-color:var(--accent);}
+
+  .btn-row{display:flex; gap:10px; margin-top:16px;}
+  .calc-btn{flex:1; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700;
+    padding:14px; border-radius:9px; cursor:pointer; border:none; background:var(--accent); color:#04130a;
+    transition:filter .15s; letter-spacing:.5px;}
+  .calc-btn:hover{filter:brightness(1.1);}
+  .reset-btn{font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:14px 18px;
+    border-radius:9px; cursor:pointer; border:1px solid var(--line); background:var(--panel2); color:var(--dim);}
+  .reset-btn:hover{color:var(--ink); border-color:var(--faint);}
+
+  /* RESULT */
+  .result{margin-top:18px; border-radius:12px; border:1px solid var(--line); overflow:hidden; display:none;}
+  .result.show{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  .verdict-bar{padding:18px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .verdict-bar.go{background:linear-gradient(180deg, rgba(63,185,80,.14), rgba(63,185,80,.04));}
+  .verdict-bar.skip{background:linear-gradient(180deg, rgba(248,81,73,.14), rgba(248,81,73,.04));}
+  .vmark{font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:900; line-height:1;}
+  .verdict-bar.go .vmark{color:var(--green);}
+  .verdict-bar.skip .vmark{color:var(--red);}
+  .vtext .vh{font-size:22px; font-weight:900; letter-spacing:.3px;}
+  .verdict-bar.go .vh{color:var(--green);} .verdict-bar.skip .vh{color:var(--red);}
+  .vtext .vs{font-size:12.5px; color:var(--dim); margin-top:2px;}
+
+  .result-body{background:var(--panel); padding:0 20px;}
+  .rrow{display:flex; gap:14px; align-items:flex-start; padding:13px 0; border-bottom:1px dashed var(--line);}
+  .rrow:last-child{border-bottom:none;}
+  .rrow .ricon{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; width:22px; flex:0 0 auto; color:var(--faint); margin-top:1px;}
+  .rrow .rlabel{font-size:11px; font-family:'JetBrains Mono',monospace; letter-spacing:1px; text-transform:uppercase; color:var(--faint); margin-bottom:2px;}
+  .rrow .rval{font-size:14px; font-weight:600;}
+  .rrow .rval b{font-weight:700;}
+  .rrow .rval .mult-big{font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700;}
+  .mc-up{color:var(--green);} .mc-base{color:var(--blue);} .mc-down{color:var(--amber);} .mc-min{color:var(--amber);}
+  .rrow .rsub{font-size:12px; color:var(--dim); margin-top:2px; line-height:1.45;}
+  .pill{font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; margin-left:6px;}
+  .pill.warn{background:rgba(210,153,34,.15); color:var(--amber);}
+  .pill.ok{background:rgba(63,185,80,.13); color:var(--green);}
+
+  .contracts-box{background:var(--panel2); border-radius:9px; padding:13px 15px; margin:13px 0 16px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .contracts-box .clabel{font-size:12px; color:var(--dim);}
+  .contracts-box .cval{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--ink);}
+  .contracts-box .cnote{font-size:11px; color:var(--faint); width:100%; font-family:'JetBrains Mono',monospace;}
+
+  /* reference links */
+  .reflinks{display:flex; gap:7px; flex-wrap:wrap; margin-top:10px;}
+  .lbtn{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding:6px 11px; border-radius:6px;
+    border:1px solid var(--line); background:var(--panel2); color:var(--ink); transition:all .15s;}
+  .lbtn:hover{border-color:var(--accent); transform:translateY(-1px);}
+  .lbtn .arr{color:var(--faint); font-size:10px;}
+
+  .disclaimer{margin-top:18px; font-size:10px; color:var(--faint); line-height:1.6;
+    font-family:'JetBrains Mono',monospace; border-top:1px solid var(--line); padding-top:11px;}
+
+  /* Collapsible About */
+  .about{margin-top:20px; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel);}
+  .about summary{
+    list-style:none; cursor:pointer; padding:14px 16px; display:flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--accent); font-weight:700; user-select:none;
+  }
+  .about summary::-webkit-details-marker{display:none;}
+  .about summary .chev{margin-left:auto; transition:transform .2s; color:var(--faint); font-size:13px;}
+  .about[open] summary .chev{transform:rotate(180deg);}
+  .about summary:hover{background:var(--panel2);}
+  .about-body{padding:4px 18px 18px; border-top:1px solid var(--line);}
+  .about-body h4{font-size:13px; font-weight:700; color:var(--ink); margin:16px 0 5px;}
+  .about-body h4:first-child{margin-top:14px;}
+  .about-body p{font-size:12.5px; color:var(--dim); line-height:1.6; margin-bottom:8px;}
+  .about-body p b{color:var(--ink);}
+  .about-body .num{font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700;}
+  .about-body .numr{font-family:'JetBrains Mono',monospace; color:var(--red); font-weight:700;}
+
+  @media(max-width:680px){.inputs{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div>
+      <div class="kicker">Long-Call Directional · 30Δ-area · 60→45 DTE</div>
+      <h1>QQQ <span>Friday</span> Calculator</h1>
+    </div>
+    <div class="meta"><b id="today">—</b>PLUG IN · GET THE CALL<br><span style="color:var(--faint)">all math runs in your browser</span></div>
+  </header>
+
+  <p class="strapline">Enter today's readings, hit <b>Calculate</b>. It applies the Go/No-Go filter, picks your size, and runs the streak + risk-cap overrides. <b>Backtest basis: +47% vs flat sizing.</b></p>
+
+  <!-- reference links to grab the numbers -->
+  <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--faint); margin-bottom:7px;">Quick lookups (open in new tabs)</div>
+  <div class="reflinks">
+    <a class="lbtn" target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/NASDAQ-QQQ/technicals/">QQQ RSI/MA ↗</a>
+    <a class="lbtn" target="_blank" rel="noopener" href="https://finance.yahoo.com/quote/QQQ/performance/">QQQ 1-mo % ↗</a>
+    <a class="lbtn" target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/CBOE-VIX/">VIX (context) ↗</a>
+  </div>
+
+  <div class="sec-label">Step 1 · Enter Today's Readings</div>
+  <div class="inputs">
+
+    <div class="field">
+      <label>RSI-14 (daily)</label>
+      <div class="hint">QQQ 14-period RSI off a daily chart. <a target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/NASDAQ-QQQ/technicals/">Look it up ↗</a> · <a target="_blank" rel="noopener" href="https://stockcharts.com/h-sc/ui?s=QQQ&p=D&yr=0&mn=6&dy=0&id=p00000000&def=Y&indConfig=RSI(14)">StockCharts ↗</a></div>
+      <div class="inwrap"><input id="rsi" type="number" step="0.1" placeholder="e.g. 58" inputmode="decimal"><span class="unit">0–100</span></div>
+    </div>
+
+    <div class="field">
+      <label>20-day return</label>
+      <div class="hint">QQQ % change over the last ~month. <a target="_blank" rel="noopener" href="https://finance.yahoo.com/quote/QQQ/performance/">Yahoo 1-mo % ↗</a> · <a target="_blank" rel="noopener" href="https://www.barchart.com/stocks/quotes/QQQ/performance">Barchart ↗</a></div>
+      <div class="inwrap"><input id="r20" type="number" step="0.1" placeholder="e.g. 2.5" inputmode="decimal"><span class="unit">%</span></div>
+    </div>
+
+    <div class="field">
+      <label>Price vs 50-day MA</label>
+      <div class="hint">Is QQQ trading above or below its 50-day MA? <a target="_blank" rel="noopener" href="https://stockcharts.com/h-sc/ui?s=QQQ&p=D&yr=1&mn=0&dy=0&id=p00000000&def=Y&indConfig=SMA(50)">Chart w/ 50MA ↗</a> · <a target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/NASDAQ-QQQ/">TradingView ↗</a></div>
+      <select id="ma">
+        <option value="below">Below 50-day MA</option>
+        <option value="near" selected>Roughly at / just above</option>
+        <option value="above">Well above 50-day MA</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Recent streak</label>
+      <div class="hint">Outcome of your last 3 closed trades.</div>
+      <select id="streak">
+        <option value="cold">0–1 wins in last 3 (cold)</option>
+        <option value="normal" selected>2 wins in last 3 / mixed</option>
+        <option value="hot">3 wins in a row (hot)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Account equity</label>
+      <div class="hint">For the 2–3% risk cap. Optional.</div>
+      <div class="inwrap"><span class="unit">$</span><input id="equity" type="number" step="100" placeholder="e.g. 25000" inputmode="decimal"></div>
+    </div>
+
+    <div class="field">
+      <label>Premium per contract</label>
+      <div class="hint">Cost of one call (debit). Optional. <a target="_blank" rel="noopener" href="https://www.barchart.com/stocks/quotes/QQQ/options">Option chain ↗</a></div>
+      <div class="inwrap"><span class="unit">$</span><input id="prem" type="number" step="1" placeholder="e.g. 450" inputmode="decimal"></div>
+    </div>
+
+  </div>
+
+  <div class="btn-row">
+    <button class="calc-btn" onclick="calc()">CALCULATE →</button>
+    <button class="reset-btn" onclick="resetAll()">Reset</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="result">
+    <div id="vbar" class="verdict-bar">
+      <div id="vmark" class="vmark"></div>
+      <div class="vtext"><div id="vh" class="vh"></div><div id="vs" class="vs"></div></div>
+    </div>
+    <div class="result-body">
+      <div id="sizeRow" class="rrow">
+        <div class="ricon">2</div>
+        <div>
+          <div class="rlabel">Position size</div>
+          <div id="sizeVal" class="rval"></div>
+          <div id="sizeSub" class="rsub"></div>
+        </div>
+      </div>
+      <div id="capRow" class="rrow">
+        <div class="ricon">$</div>
+        <div style="width:100%">
+          <div class="rlabel">Risk cap & contract count</div>
+          <div id="capVal" class="rval"></div>
+        </div>
+      </div>
+      <div class="rrow">
+        <div class="ricon">3</div>
+        <div>
+          <div class="rlabel">While on</div>
+          <div class="rval">Hold to <b>45 DTE</b>. Exit early only on thesis invalidation, never on profit.</div>
+          <div class="rsub">QQQ breaking below your entry reference on real volume = invalidation. Let the 75%-premium stop handle the rest.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <details class="about">
+    <summary>About this strategy <span class="chev">▾</span></summary>
+    <div class="about-body">
+
+      <h4>The base trade</h4>
+      <p>A long-call directional bet on QQQ: each Friday, buy <b>one ~30-delta call around 60 days to expiration</b> and exit at <b>45 DTE</b>, with a stop at 75% of premium. One active trade at a time. This calculator layers a sizing-and-filter overlay on top of that base thesis.</p>
+
+      <h4>What the backtest revealed</h4>
+      <p>Over <b>100 trades (2021–2026)</b> the base strategy made <span class="num">+$7,927</span> at a 42% win rate. But the shape of that profit is the whole point: the <b>top 5 trades produced ~81%</b> of all gains. This is a fat-right-tail strategy — you lose small and often, and a handful of trades that catch a strong QQQ rally carry everything.</p>
+      <p>That single fact drives every rule. QQQ price move and trade P/L correlate at <span class="num">0.91</span> — it's almost a pure directional bet, so the job is to be <b>large when conditions favor a runner and small when they don't</b>, and to never cap the winners.</p>
+
+      <h4>Why these specific rules</h4>
+      <p><b>Go / No-Go:</b> The only filter that removed losers without sacrificing many winners was skipping when QQQ is <b>both overbought (RSI &gt; 65) and extended (+20-day &gt; 4%)</b> — buying short-dated calls into a frothy, stretched rally was the single worst entry.</p>
+      <p><b>Size up on weakness:</b> Entries below the 50-day MA or after a negative 20-day return averaged far higher expectancy than entries into strength. Counterintuitive, but the data was clear — buying dips beat chasing momentum.</p>
+      <p><b>Streak override:</b> After three straight wins the next trade averaged <span class="numr">−$37</span>; after a cold run it averaged <span class="num">+$260</span>. So hot streaks cut size, cold streaks add it — the opposite of instinct.</p>
+      <p><b>Hold to 45 DTE, never take profit early:</b> Simulating a profit target at +100% of premium collapsed <span class="num">+$7,927</span> down to roughly break-even. Fixed targets amputate the exact right-tail runners the strategy depends on. The only valid early exit is thesis invalidation — QQQ breaking its trend on real volume.</p>
+      <p><b>Risk cap:</b> Because losses cluster (the backtest showed a 73.82% peak drawdown), no single trade should risk more than ~2–3% of equity. Sizing rules reinforce that ceiling rather than override it.</p>
+
+      <h4>The net effect</h4>
+      <p>Applying the filter + sizing to the same 100 trades produced <span class="num">+$11,641</span> versus <span class="num">+$7,927</span> flat — about <b>+47%</b>. The gain came almost entirely from sizing up on the good setups, not from skipping the bad ones. The tradeoff: bigger positions also meant a larger drawdown, so the extra return is not free.</p>
+
+      <h4>Honest limits</h4>
+      <p>This rests on ~100 trades over one mostly-bullish era, with indicators reconstructed from interpolated weekly prices — so the exact thresholds (RSI 65, +4%, 1.75×) are <b>informed starting points, not validated constants</b>. A proper backtest on real daily QQQ and options data would refine them. Treat the outputs as a disciplined framework, not a guarantee.</p>
+
+    </div>
+  </details>
+
+  <p class="disclaimer">⚠ Logic encodes the backtested rules: SKIP if RSI &gt; 65 AND 20-day &gt; +4%; size UP (1.75×) when below 50MA or 20-day negative; size DOWN (~0.4×) when well above 50MA and hot; 3-win streak forces minimum size; cold streak supports sizing up; single-trade risk capped at ~2.5% of equity. Built from ~100 trades with indicators reconstructed from interpolated weekly prices over a mostly-bullish era. Thresholds are starting points, not laws. Sizing up raises returns AND drawdown. Not financial advice.</p>
+
+</div>
+
+<script>
+  document.getElementById('today').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+  var $ = function(id){return document.getElementById(id);};
+
+  function calc(){
+    var rsi = parseFloat($('rsi').value);
+    var r20 = parseFloat($('r20').value);
+    var ma  = $('ma').value;
+    var streak = $('streak').value;
+    var equity = parseFloat($('equity').value);
+    var prem = parseFloat($('prem').value);
+
+    if(isNaN(rsi) || isNaN(r20)){
+      alert('Enter at least RSI-14 and the 20-day return to get a verdict.');
+      return;
+    }
+
+    // ---- Go / No-Go ----
+    var overbought = rsi > 65;
+    var extended = r20 > 4;
+    var skip = overbought && extended;
+
+    var res = $('result'), vbar = $('vbar');
+    res.className = 'result show';
+
+    if(skip){
+      vbar.className = 'verdict-bar skip';
+      $('vmark').textContent = '✕';
+      $('vh').textContent = 'SKIP THIS WEEK';
+      $('vs').textContent = 'QQQ is overbought (RSI '+rsi+') AND extended (+'+r20+'%) — your single worst entry. Stand down, re-check next Friday.';
+      $('sizeRow').style.display='none';
+      $('capRow').style.display='none';
+      res.scrollIntoView({behavior:'smooth', block:'start'});
+      return;
+    }
+
+    // GO
+    vbar.className = 'verdict-bar go';
+    $('vmark').textContent = '✓';
+    $('vh').textContent = 'GO — TRADE IT';
+    var why = overbought ? 'Overbought but not extended' : (extended ? 'Extended but not overbought' : 'Neither overbought nor extended');
+    $('vs').textContent = why + ' → filter passes. Proceed to sizing below.';
+    $('sizeRow').style.display='';
+
+    // ---- Sizing ----
+    var mult, cls, sizeLabel, sub, pill='';
+    var weak = (ma === 'below') || (r20 < 0);
+    var hotcond = (ma === 'above') && (r20 > 2);
+
+    if(weak){ mult=1.75; cls='mc-up'; sizeLabel='SIZE UP · 1.5–2×'; sub='QQQ is weak (below 50MA or negative 20-day) — your highest-expectancy bucket. Lean in.'; }
+    else if(hotcond){ mult=0.4; cls='mc-down'; sizeLabel='SIZE DOWN · 0.25–0.5×'; sub='QQQ well above 50MA and running hot — trim exposure, but the trade still passed the filter.'; }
+    else { mult=1.0; cls='mc-base'; sizeLabel='BASE · 1×'; sub='Neutral conditions — default size.'; }
+
+    // streak override
+    if(streak === 'hot'){
+      mult = Math.min(mult, 0.4); cls='mc-min';
+      sizeLabel = 'MINIMUM · ~0.25–0.5×';
+      sub = '3 wins in a row overrides everything → cut to minimum. That streak bucket went NEGATIVE in the backtest.';
+      pill = '<span class="pill warn">STREAK OVERRIDE</span>';
+    } else if(streak === 'cold' && mult < 1.75 && !hotcond){
+      mult = 1.75; cls='mc-up';
+      sizeLabel = 'SIZE UP · 1.5–2×';
+      sub = 'Cold streak (0–1 of last 3) is a green light to size up, not pull back.';
+      pill = '<span class="pill ok">STREAK GREEN LIGHT</span>';
+    }
+
+    $('sizeVal').innerHTML = '<span class="mult-big '+cls+'">'+sizeLabel+'</span>'+pill;
+    $('sizeSub').textContent = sub;
+
+    // ---- Risk cap / contracts ----
+    if(!isNaN(equity) && !isNaN(prem) && prem>0){
+      $('capRow').style.display='';
+      var capDollars = equity * 0.025; // 2.5% midpoint
+      var baseContracts = mult; // multiplier relative to "1 base contract"
+      // We translate: a base trade should already sit under the cap. Show max contracts allowed by cap.
+      var maxByCap = Math.floor(capDollars / prem);
+      // suggested = round the multiplier applied to 1 contract, but never exceed cap
+      var suggested = Math.max(0, Math.round(mult));
+      var capped = Math.min(suggested, maxByCap);
+      var note='';
+      if(suggested > maxByCap){
+        note = 'Sizing suggested '+suggested+', but the 2.5% cap ($'+Math.round(capDollars).toLocaleString()+') allows only '+maxByCap+'. Cap wins.';
+      } else {
+        note = '2.5% of equity = $'+Math.round(capDollars).toLocaleString()+' max risk → up to '+maxByCap+' contract(s) allowed. Sizing suggests '+suggested+'.';
+      }
+      $('capVal').innerHTML =
+        '<div class="contracts-box"><div><div class="clabel">Suggested contracts</div><div class="cval">'+capped+'</div></div>'+
+        '<div><div class="clabel">Max risk this trade</div><div class="cval">$'+Math.round(capped*prem).toLocaleString()+'</div></div>'+
+        '<div class="cnote">'+note+'</div></div>';
+    } else {
+      $('capRow').style.display='';
+      $('capVal').innerHTML = '<div class="rsub">Add account equity + premium per contract above to get an exact contract count under the 2–3% risk cap. The multiplier alone tells you to size '+sizeLabel.split('·')[0].trim().toLowerCase()+'.</div>';
+    }
+
+    res.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function resetAll(){
+    ['rsi','r20','equity','prem'].forEach(function(id){$(id).value='';});
+    $('ma').value='near'; $('streak').value='normal';
+    $('result').className='result';
+  }
+</script>
+</body>
+</html>
