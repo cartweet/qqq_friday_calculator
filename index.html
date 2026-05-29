@@ -99,11 +99,24 @@
   .pill.warn{background:rgba(210,153,34,.15); color:var(--amber);}
   .pill.ok{background:rgba(63,185,80,.13); color:var(--green);}
 
-  .contracts-box{background:var(--panel2); border-radius:9px; padding:13px 15px; margin:13px 0 16px;
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
-  .contracts-box .clabel{font-size:12px; color:var(--dim);}
-  .contracts-box .cval{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--ink);}
-  .contracts-box .cnote{font-size:11px; color:var(--faint); width:100%; font-family:'JetBrains Mono',monospace;}
+  .contracts-box{background:var(--panel2); border-radius:9px; padding:14px 16px; margin:13px 0 16px;
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; align-items:start;}
+  .contracts-box .cell{position:relative;}
+  .contracts-box .cell.cap{padding-left:14px; border-left:1px solid var(--line);}
+  .contracts-box .clabel{font-size:10px; color:var(--dim); font-family:'JetBrains Mono',monospace;
+    letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;}
+  .contracts-box .cval{font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--ink); line-height:1;}
+  .contracts-box .cval.cap-val{color:var(--amber);}
+  .contracts-box .cval.dollar{color:var(--green);}
+  .contracts-box .cval.cap-binds{color:var(--red);}
+  .contracts-box .csub{font-size:10.5px; color:var(--faint); margin-top:5px; font-family:'JetBrains Mono',monospace;}
+  .contracts-box .cnote{font-size:11.5px; color:var(--dim); width:100%; grid-column:1/-1;
+    padding-top:11px; border-top:1px dashed var(--line); font-family:'JetBrains Mono',monospace; line-height:1.5;}
+  .contracts-box .cnote.warn{color:var(--amber);}
+  @media(max-width:680px){
+    .contracts-box{grid-template-columns:1fr 1fr; }
+    .contracts-box .cell.cap{padding-left:0; border-left:none; padding-top:10px; border-top:1px solid var(--line); grid-column:1/-1;}
+  }
 
   /* reference links */
   .reflinks{display:flex; gap:7px; flex-wrap:wrap; margin-top:10px;}
@@ -217,6 +230,12 @@
       <div class="inwrap"><span class="unit">$</span><input id="prem" type="number" step="1" placeholder="e.g. 450" inputmode="decimal"></div>
     </div>
 
+    <div class="field">
+      <label>Base contracts (your "1×")</label>
+      <div class="hint">How many contracts is your <b>normal</b> trade? Multiplier scales from this. Use ~1% of equity ÷ premium as a starting point.</div>
+      <div class="inwrap"><input id="base" type="number" step="1" min="1" placeholder="e.g. 1, 5, 10" inputmode="numeric" value="1"><span class="unit">contracts</span></div>
+    </div>
+
   </div>
 
   <div class="btn-row">
@@ -303,6 +322,8 @@
     var streak = $('streak').value;
     var equity = parseFloat($('equity').value);
     var prem = parseFloat($('prem').value);
+    var base = parseInt($('base').value, 10);
+    if(isNaN(base) || base < 1) base = 1;
 
     if(isNaN(rsi) || isNaN(r20)){
       alert('Enter at least RSI-14 and the 20-day return to get a verdict. VIX inputs are optional but recommended — without them, only the price-extreme filter is checked.');
@@ -389,25 +410,30 @@
     if(!isNaN(equity) && !isNaN(prem) && prem>0){
       $('capRow').style.display='';
       var capDollars = equity * 0.025; // 2.5% midpoint
-      var baseContracts = mult; // multiplier relative to "1 base contract"
-      // We translate: a base trade should already sit under the cap. Show max contracts allowed by cap.
       var maxByCap = Math.floor(capDollars / prem);
-      // suggested = round the multiplier applied to 1 contract, but never exceed cap
-      var suggested = Math.max(0, Math.round(mult));
-      var capped = Math.min(suggested, maxByCap);
-      var note='';
-      if(suggested > maxByCap){
-        note = 'Sizing suggested '+suggested+', but the 2.5% cap ($'+Math.round(capDollars).toLocaleString()+') allows only '+maxByCap+'. Cap wins.';
+      // Multiplier applied to base contracts (default 1, user-configurable)
+      var sized = Math.max(1, Math.round(base * mult));
+      var capped = Math.min(sized, maxByCap);
+      var capBinds = sized > maxByCap;
+      var dollarRisk = capped * prem;
+      var pctRisk = (dollarRisk / equity * 100).toFixed(2);
+      var note;
+      if(capBinds){
+        note = '<span class="cnote warn">⚠ Sizing wanted '+sized+' contracts ('+base+' base × '+mult.toFixed(2)+'×), but the 2.5% cap allows only '+maxByCap+'. <b>Cap wins.</b></span>';
       } else {
-        note = '2.5% of equity = $'+Math.round(capDollars).toLocaleString()+' max risk → up to '+maxByCap+' contract(s) allowed. Sizing suggests '+suggested+'.';
+        note = '<span class="cnote">'+base+' base × '+mult.toFixed(2)+'× = '+sized+' contracts. Cap allows up to '+maxByCap+' — sizing wins (risk: '+pctRisk+'% of equity).</span>';
       }
+      var capCls = capBinds ? 'cap-binds' : 'cap-val';
       $('capVal').innerHTML =
-        '<div class="contracts-box"><div><div class="clabel">Suggested contracts</div><div class="cval">'+capped+'</div></div>'+
-        '<div><div class="clabel">Max risk this trade</div><div class="cval">$'+Math.round(capped*prem).toLocaleString()+'</div></div>'+
-        '<div class="cnote">'+note+'</div></div>';
+        '<div class="contracts-box">'+
+          '<div class="cell"><div class="clabel">Suggested contracts</div><div class="cval">'+capped+'</div><div class="csub">what to buy</div></div>'+
+          '<div class="cell"><div class="clabel">Max risk ($)</div><div class="cval dollar">$'+Math.round(dollarRisk).toLocaleString()+'</div><div class="csub">'+pctRisk+'% of equity</div></div>'+
+          '<div class="cell cap"><div class="clabel">Cap allows (max)</div><div class="cval '+capCls+'">'+maxByCap+'</div><div class="csub">2.5% = $'+Math.round(capDollars).toLocaleString()+'</div></div>'+
+          note+
+        '</div>';
     } else {
       $('capRow').style.display='';
-      $('capVal').innerHTML = '<div class="rsub">Add account equity + premium per contract above to get an exact contract count under the 2–3% risk cap. The multiplier alone tells you to size '+sizeLabel.split('·')[0].trim().toLowerCase()+'.</div>';
+      $('capVal').innerHTML = '<div class="rsub">Add account equity + premium per contract above to get an exact contract count. With base = '+base+' and multiplier = '+mult.toFixed(2)+'×, that\'s roughly <b>'+Math.max(1, Math.round(base*mult))+' contract(s)</b> — but the 2.5% risk cap could override if your account is small relative to the premium.</div>';
     }
 
     res.scrollIntoView({behavior:'smooth', block:'start'});
@@ -415,6 +441,7 @@
 
   function resetAll(){
     ['rsi','r20','vix','vixchg','equity','prem'].forEach(function(id){$(id).value='';});
+    $('base').value='1';
     $('ma').value='near'; $('streak').value='normal';
     $('result').className='result';
   }
