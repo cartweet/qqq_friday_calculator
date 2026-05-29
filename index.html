@@ -148,14 +148,14 @@
     <div class="meta"><b id="today">—</b>PLUG IN · GET THE CALL<br><span style="color:var(--faint)">all math runs in your browser</span></div>
   </header>
 
-  <p class="strapline">Enter today's readings, hit <b>Calculate</b>. It applies the Go/No-Go filter, picks your size, and runs the streak + risk-cap overrides. <b>Backtest basis: +47% vs flat sizing.</b></p>
+  <p class="strapline">Enter today's readings, hit <b>Calculate</b>. It applies a two-condition SKIP filter (price extreme OR volatility complacency), picks your size, and runs the streak + risk-cap overrides. <b>Backtest basis: +65% vs flat sizing.</b></p>
 
   <!-- reference links to grab the numbers -->
   <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--faint); margin-bottom:7px;">Quick lookups (open in new tabs)</div>
   <div class="reflinks">
     <a class="lbtn" target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/NASDAQ-QQQ/technicals/">QQQ RSI/MA ↗</a>
     <a class="lbtn" target="_blank" rel="noopener" href="https://finance.yahoo.com/quote/QQQ/performance/">QQQ 1-mo % ↗</a>
-    <a class="lbtn" target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/CBOE-VIX/">VIX (context) ↗</a>
+    <a class="lbtn" target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/CBOE-VIX/">VIX ↗</a>
   </div>
 
   <div class="sec-label">Step 1 · Enter Today's Readings</div>
@@ -171,6 +171,18 @@
       <label>20-day return</label>
       <div class="hint">QQQ % change over the last ~month. <a target="_blank" rel="noopener" href="https://finance.yahoo.com/quote/QQQ/performance/">Yahoo 1-mo % ↗</a> · <a target="_blank" rel="noopener" href="https://www.barchart.com/stocks/quotes/QQQ/performance">Barchart ↗</a></div>
       <div class="inwrap"><input id="r20" type="number" step="0.1" placeholder="e.g. 2.5" inputmode="decimal"><span class="unit">%</span></div>
+    </div>
+
+    <div class="field">
+      <label>VIX (current)</label>
+      <div class="hint">Current VIX level (CBOE Volatility Index). <a target="_blank" rel="noopener" href="https://www.tradingview.com/symbols/CBOE-VIX/">TradingView ↗</a> · <a target="_blank" rel="noopener" href="https://finance.yahoo.com/quote/%5EVIX/">Yahoo ↗</a></div>
+      <div class="inwrap"><input id="vix" type="number" step="0.01" placeholder="e.g. 16.5" inputmode="decimal"><span class="unit">level</span></div>
+    </div>
+
+    <div class="field">
+      <label>VIX 5-day change</label>
+      <div class="hint">VIX today minus VIX 5 trading days ago. Negative = falling. <a target="_blank" rel="noopener" href="https://stockcharts.com/h-sc/ui?s=$VIX&p=D&yr=0&mn=3&dy=0&id=p00000000">StockCharts ↗</a></div>
+      <div class="inwrap"><input id="vixchg" type="number" step="0.01" placeholder="e.g. -1.2" inputmode="decimal"><span class="unit">±pts</span></div>
     </div>
 
     <div class="field">
@@ -257,22 +269,22 @@
       <p>That single fact drives every rule. QQQ price move and trade P/L correlate at <span class="num">0.91</span> — it's almost a pure directional bet, so the job is to be <b>large when conditions favor a runner and small when they don't</b>, and to never cap the winners.</p>
 
       <h4>Why these specific rules</h4>
-      <p><b>Go / No-Go:</b> The only filter that removed losers without sacrificing many winners was skipping when QQQ is <b>both overbought (RSI &gt; 65) and extended (+20-day &gt; 4%)</b> — buying short-dated calls into a frothy, stretched rally was the single worst entry.</p>
+      <p><b>Go / No-Go — two-condition SKIP (OR):</b> The strategy fails in two distinct conditions, each caught by a different signal. <b>(1) Price extreme</b> — QQQ overbought (RSI &gt; 65) AND extended (+20-day &gt; 4%): buying short-dated calls into a frothy, stretched rally. <b>(2) Volatility complacency</b> — VIX &lt; 15 AND VIX falling over 5 days: buying calls into melting-down complacency, the setup behind your worst stop-outs (Trades 64, 71, 77). The two filters overlap only on 6 of the 13–22 trades they catch, so they're complementary, not redundant.</p>
       <p><b>Size up on weakness:</b> Entries below the 50-day MA or after a negative 20-day return averaged far higher expectancy than entries into strength. Counterintuitive, but the data was clear — buying dips beat chasing momentum.</p>
       <p><b>Streak override:</b> After three straight wins the next trade averaged <span class="numr">−$37</span>; after a cold run it averaged <span class="num">+$260</span>. So hot streaks cut size, cold streaks add it — the opposite of instinct.</p>
       <p><b>Hold to 45 DTE, never take profit early:</b> Simulating a profit target at +100% of premium collapsed <span class="num">+$7,927</span> down to roughly break-even. Fixed targets amputate the exact right-tail runners the strategy depends on. The only valid early exit is thesis invalidation — QQQ breaking its trend on real volume.</p>
       <p><b>Risk cap:</b> Because losses cluster (the backtest showed a 73.82% peak drawdown), no single trade should risk more than ~2–3% of equity. Sizing rules reinforce that ceiling rather than override it.</p>
 
       <h4>The net effect</h4>
-      <p>Applying the filter + sizing to the same 100 trades produced <span class="num">+$11,641</span> versus <span class="num">+$7,927</span> flat — about <b>+47%</b>. The gain came almost entirely from sizing up on the good setups, not from skipping the bad ones. The tradeoff: bigger positions also meant a larger drawdown, so the extra return is not free.</p>
+      <p>Layering the two-condition SKIP + sizing rules onto the same 100 trades produced <span class="num">+$13,084</span> versus <span class="num">+$7,927</span> flat — about <b>+65%</b>. Breakdown: sizing alone delivers <span class="num">+47%</span>; adding the VIX-complacency filter to sizing adds another ~$1,400; combining both filters captures the rest. The gain came mostly from sizing up on good setups, but the volatility filter is the strongest single skip rule. Tradeoff: bigger positions also meant a larger drawdown, so the extra return is not free.</p>
 
       <h4>Honest limits</h4>
-      <p>This rests on ~100 trades over one mostly-bullish era, with indicators reconstructed from interpolated weekly prices — so the exact thresholds (RSI 65, +4%, 1.75×) are <b>informed starting points, not validated constants</b>. A proper backtest on real daily QQQ and options data would refine them. Treat the outputs as a disciplined framework, not a guarantee.</p>
+      <p>This rests on ~100 trades over one mostly-bullish era, with QQQ indicators reconstructed from interpolated weekly prices and VIX merged from a separate daily series. The VIX filter only catches 13 trades, and its edge depends on 8 losers (−$2,816) outweighing 5 winners (+$2,151) — a thin dollar margin that could shift on different paths. The thresholds (RSI 65, +4%, VIX 15, 1.75×) are <b>informed starting points, not validated constants</b>. A proper out-of-sample backtest on real daily QQQ and options data would refine them. Treat outputs as a disciplined framework, not a guarantee.</p>
 
     </div>
   </details>
 
-  <p class="disclaimer">⚠ Logic encodes the backtested rules: SKIP if RSI &gt; 65 AND 20-day &gt; +4%; size UP (1.75×) when below 50MA or 20-day negative; size DOWN (~0.4×) when well above 50MA and hot; 3-win streak forces minimum size; cold streak supports sizing up; single-trade risk capped at ~2.5% of equity. Built from ~100 trades with indicators reconstructed from interpolated weekly prices over a mostly-bullish era. Thresholds are starting points, not laws. Sizing up raises returns AND drawdown. Not financial advice.</p>
+  <p class="disclaimer">⚠ Logic encodes the backtested rules: SKIP if EITHER (RSI &gt; 65 AND 20-day &gt; +4%) OR (VIX &lt; 15 AND VIX 5-day change &lt; 0); size UP (1.75×) when below 50MA or 20-day negative; size DOWN (~0.4×) when well above 50MA and hot; 3-win streak forces minimum size; cold streak supports sizing up; single-trade risk capped at ~2.5% of equity. Built from ~100 trades with QQQ indicators reconstructed from interpolated weekly prices and VIX from a separate daily series, over a mostly-bullish era. Thresholds are starting points, not laws. Sizing up raises returns AND drawdown. Not financial advice.</p>
 
 </div>
 
@@ -285,20 +297,29 @@
   function calc(){
     var rsi = parseFloat($('rsi').value);
     var r20 = parseFloat($('r20').value);
+    var vix = parseFloat($('vix').value);
+    var vixchg = parseFloat($('vixchg').value);
     var ma  = $('ma').value;
     var streak = $('streak').value;
     var equity = parseFloat($('equity').value);
     var prem = parseFloat($('prem').value);
 
     if(isNaN(rsi) || isNaN(r20)){
-      alert('Enter at least RSI-14 and the 20-day return to get a verdict.');
+      alert('Enter at least RSI-14 and the 20-day return to get a verdict. VIX inputs are optional but recommended — without them, only the price-extreme filter is checked.');
       return;
     }
 
-    // ---- Go / No-Go ----
+    // ---- Go / No-Go: two-condition OR-skip ----
     var overbought = rsi > 65;
     var extended = r20 > 4;
-    var skip = overbought && extended;
+    var priceSkip = overbought && extended;
+
+    var haveVix = !isNaN(vix) && !isNaN(vixchg);
+    var lowVix = haveVix && vix < 15;
+    var fallingVix = haveVix && vixchg < 0;
+    var volSkip = lowVix && fallingVix;
+
+    var skip = priceSkip || volSkip;
 
     var res = $('result'), vbar = $('vbar');
     res.className = 'result show';
@@ -307,7 +328,15 @@
       vbar.className = 'verdict-bar skip';
       $('vmark').textContent = '✕';
       $('vh').textContent = 'SKIP THIS WEEK';
-      $('vs').textContent = 'QQQ is overbought (RSI '+rsi+') AND extended (+'+r20+'%) — your single worst entry. Stand down, re-check next Friday.';
+      var reason;
+      if(priceSkip && volSkip){
+        reason = 'Both filters fired: QQQ overbought (RSI '+rsi+') AND extended (+'+r20+'%), AND VIX low ('+vix+') AND falling ('+vixchg+'). Stand down.';
+      } else if(priceSkip){
+        reason = 'Price-extreme filter: QQQ overbought (RSI '+rsi+') AND extended (+'+r20+'%) — buying calls into a frothy stretched rally.';
+      } else {
+        reason = 'Volatility-complacency filter: VIX low ('+vix+') AND falling ('+vixchg+' over 5d) — buying calls into melting-down complacency, your worst stop-out condition historically.';
+      }
+      $('vs').textContent = reason + ' Re-check next Friday.';
       $('sizeRow').style.display='none';
       $('capRow').style.display='none';
       res.scrollIntoView({behavior:'smooth', block:'start'});
@@ -318,8 +347,17 @@
     vbar.className = 'verdict-bar go';
     $('vmark').textContent = '✓';
     $('vh').textContent = 'GO — TRADE IT';
-    var why = overbought ? 'Overbought but not extended' : (extended ? 'Extended but not overbought' : 'Neither overbought nor extended');
-    $('vs').textContent = why + ' → filter passes. Proceed to sizing below.';
+    var conds = [];
+    if(!overbought && !extended) conds.push('not overbought or extended');
+    else if(overbought) conds.push('overbought but not extended');
+    else if(extended) conds.push('extended but not overbought');
+    if(haveVix){
+      if(!lowVix) conds.push('VIX ≥ 15');
+      else if(!fallingVix) conds.push('VIX low but not falling');
+    } else {
+      conds.push('VIX not entered');
+    }
+    $('vs').textContent = 'Filter passes ('+conds.join(', ')+') → proceed to sizing.';
     $('sizeRow').style.display='';
 
     // ---- Sizing ----
@@ -376,7 +414,7 @@
   }
 
   function resetAll(){
-    ['rsi','r20','equity','prem'].forEach(function(id){$(id).value='';});
+    ['rsi','r20','vix','vixchg','equity','prem'].forEach(function(id){$(id).value='';});
     $('ma').value='near'; $('streak').value='normal';
     $('result').className='result';
   }
